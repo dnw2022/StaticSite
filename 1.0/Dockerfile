@@ -46,4 +46,6 @@ COPY mysite /etc/nginx/sites-available/mysite
 COPY nginx.conf /etc/nginx/nginx.conf
 RUN mkdir /etc/nginx/sites-enabled
 
+COPY index.html /home/site/wwwroot/index.html
+
 ENTRYPOINT ["/opt/startup/init_container.sh"]
