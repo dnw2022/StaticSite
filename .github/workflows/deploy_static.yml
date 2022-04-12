@@ -12,7 +12,7 @@ env:
   RESOURCE_GROUP: "rg-dnw"
   ACR_NAME: "acrdnw2"
   PLAN: "plan-dnw"
-  APP_NAME: "static"
+  APP_NAME: "static-dnw"
 
 jobs:
   build-and-deploy:
