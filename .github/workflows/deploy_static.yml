@@ -32,7 +32,7 @@ jobs:
         run: |-
           az acr login --name $ACR_NAME
           ACR_TAG="$ACR_NAME.azurecr.io/$APP_NAME:latest"
-          docker build -t $ACR_TAG .
+          docker build -t $ACR_TAG -f ./1.0/Dockerfile ./1.0
           docker push $ACR_TAG
           az acr repository list --name $ACR_NAME --output table
 
