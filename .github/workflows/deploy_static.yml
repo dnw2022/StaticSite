@@ -1,0 +1,59 @@
+name: Deploy to Azure App Service (AAS)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+env:
+  SUBSCRIPTION_ID: "f2485aef-25f1-418d-bb35-92098bbf3b08"
+  SERVICE_PRINCIPAL_NAME: "sp-dnw"
+  RESOURCE_GROUP: "rg-dnw"
+  ACR_NAME: "acrdnw2"
+  PLAN: "plan-dnw"
+  APP_NAME: "static"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # https://github.com/Azure/login
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # https://docs.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli
+      - name: Build Webapp image and push it to Azure Container Registry (ACR)
+        run: |-
+          az acr login --name $ACR_NAME
+          ACR_TAG="$ACR_NAME.azurecr.io/$APP_NAME:latest"
+          docker build -t $ACR_TAG .
+          docker push $ACR_TAG
+          az acr repository list --name $ACR_NAME --output table
+
+      - name: Create Azure Web App if it does not exist
+        run: |-
+          if [[ $(az webapp list -g $RESOURCE_GROUP --query "[?name=='$APP_NAME'] | length(@)") < 1 ]]
+          then
+            echo "Webapp $APP_NAME does not exist. Creating it.."
+
+            az acr update -n $ACR_NAME --admin-enabled true
+
+            ACR_TAG="$ACR_NAME.azurecr.io/$APP_NAME:latest"
+            az webapp create \
+              --resource-group $RESOURCE_GROUP \
+              --plan $PLAN \
+              --name $APP_NAME \
+              --https-only false \
+              --deployment-container-image-name $ACR_TAG
+
+            az webapp deployment container config \
+              --name $APP_NAME \
+              --resource-group $RESOURCE_GROUP \
+              --enable-cd true
+          fi
